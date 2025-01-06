@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "807608578680",
+    "project_id": "israfil-blog",
+    "storage_bucket": "israfil-blog.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:807608578680:android:bd11164ff549c7d9f1338d",
+        "android_client_info": {
+          "package_name": "com.example.isr_afil_blog_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZ3lBHPlww4x5ulsTlXwhbDFyepu88DMQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

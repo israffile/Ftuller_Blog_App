@@ -1,0 +1,39 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "israfil-blog",
+          "appId": "1:807608578680:android:bd11164ff549c7d9f1338d",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "israfil-blog",
+          "configurations": {
+            "android": "1:807608578680:android:bd11164ff549c7d9f1338d",
+            "ios": "1:807608578680:ios:7ceffe3af2e8916cf1338d",
+            "macos": "1:807608578680:ios:7ceffe3af2e8916cf1338d",
+            "web": "1:807608578680:web:f68dd4431ac98e28f1338d",
+            "windows": "1:807608578680:web:7293322facb25167f1338d"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
