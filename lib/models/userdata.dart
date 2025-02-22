@@ -51,7 +51,7 @@ class Userdata {
 
 class UserPost {
   String? postid;
-  String username, tittle, location, details, userid;
+  String username, tittle, location, details, userid, photoUrl;
 
   Timestamp? postTime;
 
@@ -61,6 +61,7 @@ class UserPost {
         tittle = "",
         location = "",
         details = "",
+        photoUrl = "",
         postTime = null;
 
   Map<String, dynamic> toMap() => {
@@ -69,6 +70,7 @@ class UserPost {
         "tittle": tittle,
         "location": location,
         "details": details,
+        "photoUrl": photoUrl,
         "postTime": postTime?.millisecondsSinceEpoch,
       };
 
@@ -78,7 +80,8 @@ class UserPost {
         tittle = map["tittle"],
         location = map["location"],
         details = map["details"],
-        postTime = map["postTime"] != null? Timestamp.fromMillisecondsSinceEpoch(map["postTime"]) : null;
+        photoUrl = map["photoUrl"],
+        postTime = map["postTime"] != null ? Timestamp.fromMillisecondsSinceEpoch(map["postTime"]) : null;
 
   static Future<void> postData(UserPost postData) async {
     Map<String, dynamic> mapdata = postData.toMap();
@@ -116,4 +119,6 @@ class UserPost {
   static Future<void> deletePost(String fid) async{
     await FirebaseFirestore.instance.collection("postdata").doc(fid).delete();
   }
+
+  
 }

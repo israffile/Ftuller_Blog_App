@@ -1,38 +1,324 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isr_afil_blog_app/models/userdata.dart';
+import 'package:isr_afil_blog_app/widgets/more&sign.dart';
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+class Profile extends StatefulWidget {
+  const Profile({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<Profile> createState() => _ProfileState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  void _showSignOutDialog(BuildContext context) async {
-    var navigator = Navigator.of(context);
+class _ProfileState extends State<Profile> {
+  Future<List<UserPost>>? ownpost;
 
-    bool? signout = await showDialog(
+  void reload() {
+    setState(() {
+      ownpost = UserPost.getOwndata(FirebaseAuth.instance.currentUser!.uid);
+    });
+  }
+
+  late TextEditingController tittleController;
+  late TextEditingController locationController;
+  late TextEditingController detailsController;
+  late TextEditingController nameController;
+
+  String time(Timestamp time) {
+    var datetime =
+        DateTime.fromMillisecondsSinceEpoch(time.millisecondsSinceEpoch);
+    return "${datetime.hour}:${datetime.minute}; ${datetime.day}-${datetime.month}-${datetime.year}";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: FutureBuilder(
+          future: Userdata.getuser(FirebaseAuth.instance.currentUser!.uid),
+          builder: (context, snap) {
+            if (snap.hasData) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Column(
+                      children: [
+                        const CircleAvatar(
+                          radius: 50,
+                          backgroundImage:
+                              NetworkImage('https://via.placeholder.com/150'),
+                        ),
+                        Text(
+                          snap.requireData.name, //name
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          snap.requireData.email, //email
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildStat('3,820', 'Followers'),
+                            _buildStat('6,290', 'Following'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const MoreSign()));
+                        },
+                        child: const Text(
+                          "Profile more details",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.arrow_circle_right_outlined),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'My Posts',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildPost(),
+                ],
+              );
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStat(String value, String label) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showDialog(BuildContext context, UserPost post) {
+    showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Do you want to sign out?'),
+          backgroundColor: const Color.fromARGB(255, 82, 82, 82),
+          title: const Row(
+            children: [
+              Text(
+                "Edit or delete post  ",
+              ),
+              Icon(
+                Icons.info,
+                color: Color.fromARGB(255, 52, 52, 52),
+              ),
+            ],
+          ),
           actions: [
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 52, 52, 52)),
+              onPressed: () => _showEditDialog(context, post),
+              child: const Icon(
+                Icons.edit,
+                color: Colors.blue,
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 52, 52, 52)),
+              onPressed: () => _showDeleteDialog(context, post),
+              child: const Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  var formkey = GlobalKey<FormState>();
+  void _showEditDialog(BuildContext context, UserPost userpost) {
+    tittleController = TextEditingController(text: userpost.tittle);
+    locationController = TextEditingController(text: userpost.location);
+    detailsController = TextEditingController(text: userpost.details);
+    nameController = TextEditingController(text: userpost.username);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Form(
+          key: formkey,
+          child: AlertDialog(
+            backgroundColor: const Color.fromARGB(255, 126, 126, 126),
+            title: const Text("Edit your post"),
+            actions: [
+              TextFormField(
+                maxLength: 30,
+                controller: tittleController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Tittle can't be empty!!";
+                  } else {
+                    return null;
+                  }
+                },
+                decoration: const InputDecoration(labelText: "Tittle"),
+              ),
+              TextFormField(
+                maxLength: 20,
+                controller: locationController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Location can't be empty!!";
+                  } else {
+                    return null;
+                  }
+                },
+                decoration: const InputDecoration(labelText: "Location"),
+              ),
+              TextFormField(
+                maxLength: 1501,
+                controller: detailsController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Details can't be empty!!";
+                  } else {
+                    return null;
+                  }
+                },
+                decoration: const InputDecoration(labelText: "Details"),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 52, 52, 52)),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(color: Colors.red),
+                      )),
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 52, 52, 52)),
+                      onPressed: () {
+                        if (formkey.currentState!.validate()) {
+                          UserPost post = UserPost();
+                          post.postid = userpost.postid;
+                          post.userid = userpost.userid;
+                          post.username = userpost.username;
+                          post.tittle = tittleController.text;
+                          post.location = locationController.text;
+                          post.details = detailsController.text;
+                          post.postTime = Timestamp.now();
+                          UserPost.postData(post);
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Post updated!"),
+                            ),
+                          );
+                          reload();
+                        }
+                      },
+                      child: const Text(
+                        "Update post",
+                        style: TextStyle(color: Colors.blue),
+                      )),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, UserPost post) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 126, 126, 126),
+          title: const Text("This post will be delete!"),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 52, 52, 52)),
               onPressed: () {
-                Navigator.of(context).pop(false);
+                Navigator.pop(context);
               },
               child: const Text('Cancel'),
             ),
-            TextButton(
-              onPressed: () {
-                // Handle sign-out logic
-                FirebaseAuth.instance.signOut();
-                Navigator.of(context).pop(true);
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 52, 52, 52)),
+              onPressed: () async {
+                var nav = Navigator.of(context);
+                await UserPost.deletePost(post.postid!);
+                nav.pop();
+                reload();
               },
               child: const Text(
-                'Sign Out',
+                'Delete',
                 style: TextStyle(color: Colors.red),
               ),
             ),
@@ -40,193 +326,110 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
-    if (signout != null && signout == true) {
-      navigator.pop();
-    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Expanded(
-        child: FutureBuilder(
-            future: UserPost.getOwndata(FirebaseAuth.instance.currentUser!.uid),
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return ListView(
-                  scrollDirection: Axis.vertical,
-                  children: [
-                    for (var post in snapshot.requireData)
-                      Column(
+  // Widget _buildWorkoutCard(String title, String imageUrl) {
+  Widget _buildPost() {
+    return FutureBuilder(
+      future: UserPost.getOwndata(FirebaseAuth.instance.currentUser!.uid),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return Column(
+            children: [
+              for (var post in snapshot.requireData)
+                GestureDetector(
+                  onLongPress: () => _showDialog(context, post),
+                  child: Card(
+                    color: Colors.grey[900],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Stack(
-                          //   children: [
-                          //     ClipRRect(
-                          //       borderRadius:
-                          //           const BorderRadius.vertical(top: Radius.circular(12)),
-                          //       child: Image.network(
-
-                          //         height: 180,
-                          //         width: double.infinity,
-                          //         fit: BoxFit.fill,
-                          //       ),
-                          //     ),
-                          //     const Positioned(
-                          //       top: 8,
-                          //       right: 8,
-                          //       child: CircleAvatar(
-                          //         backgroundColor: Colors.white,
-                          //         child: Icon(Icons.threed_rotation),
-                          //       ),
-                          //     ),
-                          //   ],
-                          // ),
-                          Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      post.username, //user name
-                                      style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800),
+                          Row(
+                            children: [
+                              const CircleAvatar(
+                                radius: 20,
+                                backgroundImage: NetworkImage(
+                                    'https://via.placeholder.com/150'), //img
+                              ),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    post.username, //user name
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    const Spacer(),
-                                    IconButton(
-                                      onPressed: () {},
-                                      icon: const Icon(Icons.info),
+                                  ),
+                                  Text(
+                                    time(post.postTime!),
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
                                     ),
-                                    // post.userid == FirebaseAuth.instance.currentUser?.uid
-                                    //     ? IconButton(
-                                    //         onPressed: () =>
-                                    //             _showEditDialog(context, post),
-                                    //         icon: const Icon(
-                                    //           Icons.edit_outlined,
-                                    //           color: Colors.blue,
-                                    //         ),
-                                    //       )
-                                    //     : const SizedBox.shrink(),
-                                    // post.userid == FirebaseAuth.instance.currentUser?.uid
-                                    //     ? IconButton(
-                                    //         onPressed: () =>
-                                    //             _showDeleteDialog(
-                                    //                 context, post),
-                                    //         // icon: const Icon(Icons.more_vert_sharp),
-                                    //         icon: const Icon(
-                                    //           Icons.delete_outlined,
-                                    //           color: Colors.red,
-                                    //         ),
-                                    //       )
-                                    //     : const SizedBox.shrink(),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Column(
-                                  children: [
-                                    Center(
-                                      child: Text(
-                                        "Tittle: ${post.tittle}",
-                                        style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Center(
-                                      child: Text(
-                                        "Location: ${post.location}",
-                                        style: const TextStyle(
-                                            color: Colors.grey),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      "Details: ${post.details}",
-                                      style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.9,
+                            height: MediaQuery.of(context).size.width * 0.9,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                            ),
+                            child: Image.network(
+                              post.photoUrl,
+                              fit: BoxFit.cover,
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                    child:
+                                        CircularProgressIndicator()); // Show loading indicator
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(Icons.image_not_supported,
+                                    size: 50, color: Colors.grey);
+                              },
+                            ),
+                          ),
+                          Text(
+                            "Tittle: ${post.tittle}", //tittle section
+                            style: const TextStyle(
+                                color: Color.fromARGB(255, 113, 181, 215),
+                                fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            "location: ${post.location}", //location section
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          Text(
+                            'Details: ${post.details}', //details section
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
                             ),
                           ),
                         ],
                       ),
-                  ],
-                );
-              } else {
-                return const Center(child: Text("No post available"));
-              }
-            }),
-      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        } else {
+          return const Center(child: CircularProgressIndicator());
+        }
+      },
     );
   }
-
-  // @override
-  // Widget build(BuildContext context) {
-  //   return Scaffold(
-  //     body: FutureBuilder(
-  //       future: Userdata.getuser(FirebaseAuth.instance.currentUser!.uid),
-  //       builder: (context, snap) {
-  //         if (snap.hasData) {
-  //           return ListView(
-  //           padding: const EdgeInsets.all(16.0),
-  //           children: [
-  //             ListTile(
-  //               title: Text('Name: ${snap.requireData.name}', style: const TextStyle(fontWeight: FontWeight.bold),),
-  //             ),
-  //             ListTile(
-  //               title: Text('E-mail: ${snap.requireData.email}'),
-  //               trailing: const Icon(Icons.arrow_forward_ios),
-  //               onTap: () {},
-  //             ),
-  //             ListTile(
-  //               title: Text('Gender: ${snap.requireData.gender}'),
-  //               trailing: const Icon(Icons.arrow_forward_ios),
-  //               onTap: () {},
-  //             ),
-  //             ListTile(
-  //               title: Text('Gender: ${snap.requireData.age}'),
-  //               trailing: const Icon(Icons.arrow_forward_ios),
-  //               onTap: () {},
-  //             ),
-  //             ListTile(
-  //               title: Text('Number: ${snap.requireData.number}'),
-  //               trailing: const Icon(Icons.arrow_forward_ios),
-  //               onTap: () {},
-  //             ),
-  //             ListTile(
-  //               title: const Text('Support'),
-  //               trailing: const Icon(Icons.arrow_forward_ios),
-  //               onTap: () {},
-  //             ),
-  //             const SizedBox(height: 20),
-  //             Center(
-  //               child: ElevatedButton(
-  //                 onPressed: () => _showSignOutDialog(context),
-  //                 style: ElevatedButton.styleFrom(
-  //                   backgroundColor: Colors.red,
-  //                   shape: RoundedRectangleBorder(
-  //                     borderRadius: BorderRadius.circular(8.0),
-  //                   ),
-  //                   padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 16.0),
-  //                 ),
-  //                 child: const Text('Sign Out', style: TextStyle(color: Colors.white)),
-  //               ),
-  //             ),
-  //           ],
-  //         );
-  //         } else {
-  //           return const Center(
-  //             child: CircularProgressIndicator(),
-  //           );
-  //         }
-  //       }
-  //     ),
-  //   );
-  // }
 }

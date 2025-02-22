@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:isr_afil_blog_app/models/userdata.dart';
@@ -12,6 +13,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Future<List<UserPost>>? userpost;
+
+  String time(Timestamp time) {
+    var datetime =
+        DateTime.fromMillisecondsSinceEpoch(time.millisecondsSinceEpoch);
+    return "${datetime.hour}:${datetime.minute}; ${datetime.day}-${datetime.month}-${datetime.year}";
+  }
 
   void reload() {
     setState(() {
@@ -30,18 +37,21 @@ class _HomeScreenState extends State<HomeScreen> {
     reload();
   }
 
+  var check = FirebaseAuth.instance.currentUser;
   var formkey = GlobalKey<FormState>();
   void _showEditDialog(BuildContext context, UserPost userpost) {
     tittleController = TextEditingController(text: userpost.tittle);
     locationController = TextEditingController(text: userpost.location);
     detailsController = TextEditingController(text: userpost.details);
     nameController = TextEditingController(text: userpost.username);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Form(
           key: formkey,
           child: AlertDialog(
+            backgroundColor: const Color.fromARGB(255, 126, 126, 126),
             title: const Text("Edit your post"),
             actions: [
               TextFormField(
@@ -83,7 +93,10 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  TextButton(
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 52, 52, 52)),
                       onPressed: () {
                         Navigator.pop(context);
                       },
@@ -91,7 +104,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         "Cancel",
                         style: TextStyle(color: Colors.red),
                       )),
-                  TextButton(
+                  ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              const Color.fromARGB(255, 52, 52, 52)),
                       onPressed: () {
                         if (formkey.currentState!.validate()) {
                           UserPost post = UserPost();
@@ -101,6 +117,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           post.tittle = tittleController.text;
                           post.location = locationController.text;
                           post.details = detailsController.text;
+                          post.postTime = Timestamp.now();
+                          // post.photoUrl = post.photoUrl;
                           UserPost.postData(post);
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -124,221 +142,168 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showDialog(BuildContext context, UserPost post) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 82, 82, 82),
+          title: const Row(
+            children: [
+              Text("Edit or delete post  "),
+              Icon(
+                Icons.info,
+                color: Color.fromARGB(255, 52, 52, 52),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 52, 52, 52)),
+              onPressed: () => _showEditDialog(context, post),
+              child: const Icon(
+                Icons.edit,
+                color: Colors.blue,
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 52, 52, 52)),
+              onPressed: () => _showDeleteDialog(context, post),
+              child: const Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 24, 22, 18),
-      body: FutureBuilder(
-        future: userpost,
-        builder: (context, snap) {
-          if (snap.hasData) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
+      backgroundColor: Colors.black,
+      body: SingleChildScrollView(
+        child: FutureBuilder(
+          future: UserPost.getdata(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
-                  // Tabs
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text(
-                          'Daily blogs',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, color: Colors.black),
-                        ),
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text(
+                      'All Posts',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('Travel blogs',
-                            style: TextStyle(color: Colors.grey)),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('Upcoming',
-                            style: TextStyle(color: Colors.grey)),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  // Property Listings
-                  Expanded(
-                    child: ListView(
-                      scrollDirection: Axis.vertical,
-                      children: [
-                        for (var post in snap.requireData)
-                          Column(
+                  for (var post in snapshot.requireData)
+                    GestureDetector(
+                      onLongPress:
+                          post.userid == FirebaseAuth.instance.currentUser?.uid
+                              ? () => _showDialog(context, post)
+                              : null,
+                      child: Card(
+                        color: Colors.grey[900],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Stack(
-                              //   children: [
-                              //     ClipRRect(
-                              //       borderRadius:
-                              //           const BorderRadius.vertical(top: Radius.circular(12)),
-                              //       child: Image.network(
-
-                              //         height: 180,
-                              //         width: double.infinity,
-                              //         fit: BoxFit.fill,
-                              //       ),
-                              //     ),
-                              //     const Positioned(
-                              //       top: 8,
-                              //       right: 8,
-                              //       child: CircleAvatar(
-                              //         backgroundColor: Colors.white,
-                              //         child: Icon(Icons.threed_rotation),
-                              //       ),
-                              //     ),
-                              //   ],
-                              // ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                    left: 8, right: 8, top: 4, bottom: 4),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color:
-                                        const Color.fromARGB(255, 56, 47, 33),
-                                    borderRadius: BorderRadius.circular(10),
+                              Row(
+                                children: [
+                                  const CircleAvatar(
+                                    radius: 20,
+                                    backgroundImage: NetworkImage(
+                                        'https://via.placeholder.com/150'), //img
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(10),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Text(
-                                                  post.username, //user name
-                                                  style: const TextStyle(
-                                                    color: Color.fromARGB(255, 101, 89, 89),
-                                                    overflow: TextOverflow.ellipsis,
-                                                      fontSize: 16,
-                                                      fontWeight: FontWeight.w800),
-                                                ),
-                                              ],
-                                            ),
-                                            const Spacer(),
-                                            IconButton(
-                                              onPressed: () {},
-                                              icon: const Icon(Icons.info),
-                                            ),
-                                            post.userid ==
-                                                    FirebaseAuth.instance
-                                                        .currentUser?.uid
-                                                ? IconButton(
-                                                    onPressed: () =>
-                                                        _showEditDialog(
-                                                            context, post),
-                                                    icon: const Icon(
-                                                      Icons.edit_outlined,
-                                                      color: Colors.blue,
-                                                    ),
-                                                  )
-                                                : const SizedBox.shrink(),
-                                            post.userid ==
-                                                    FirebaseAuth.instance
-                                                        .currentUser?.uid
-                                                ? IconButton(
-                                                    onPressed: () =>
-                                                        _showDeleteDialog(
-                                                            context, post),
-                                                    // icon: const Icon(Icons.more_vert_sharp),
-                                                    icon: const Icon(
-                                                      Icons.delete_outlined,
-                                                      color: Colors.red,
-                                                    ),
-                                                  )
-                                                : const SizedBox.shrink(),
-                                          ],
+                                  const SizedBox(width: 8),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        post.username, //user name
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                        const SizedBox(height: 8),
-                                        Column(
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    "Tittle: ${post.tittle}",
-                                                    style: const TextStyle(
-                                                        overflow: TextOverflow.ellipsis,
-                                                        color: Color.fromARGB(
-                                                            255, 158, 152, 152),
-                                                        fontSize: 18,
-                                                        fontWeight:
-                                                            FontWeight.bold),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    "post-time:${post.postTime}",
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    "Location: ${post.location}",
-                                                    style: const TextStyle(
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      color: Color.fromARGB(
-                                                          255, 158, 152, 152),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    "Details: ${post.details}",
-                                                    style: const TextStyle(
-                                                      overflow: TextOverflow.clip,
-                                                      color: Color.fromARGB(
-                                                          255, 255, 255, 255),
-                                                      fontSize: 15,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                      ),
+                                      Text(
+                                        time(post.postTime!),
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 14,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.9,
+                                height: MediaQuery.of(context).size.width * 0.9,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                ),
+                                child: Image.network(
+                                  post.photoUrl,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                        child:
+                                            CircularProgressIndicator()); // Show loading indicator
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(Icons.image_not_supported,
+                                        size: 50, color: Colors.grey);
+                                  },
+                                ),
+                              ),
+                              Text(
+                                "Tittle: ${post.tittle}", //tittle section
+                                style: const TextStyle(
+                                    color: Color.fromARGB(255, 113, 181, 215),
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                "location: ${post.location}", //location section
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                              Text(
+                                'Details: ${post.details}', //details section
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
                                 ),
                               ),
                             ],
                           ),
-                      ],
+                        ),
+                      ),
                     ),
-                  ),
                 ],
-              ),
-            );
-          } else {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-        },
+              );
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
+        ),
       ),
     );
   }
@@ -348,15 +313,20 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 82, 82, 82),
           title: const Text("This post will be delete!"),
           actions: [
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 52, 52, 52)),
               onPressed: () {
                 Navigator.pop(context);
               },
               child: const Text('Cancel'),
             ),
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 52, 52, 52)),
               onPressed: () async {
                 var nav = Navigator.of(context);
                 await UserPost.deletePost(post.postid!);

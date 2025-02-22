@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:isr_afil_blog_app/widgets/signup.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Signin extends StatefulWidget {
   const Signin({super.key, this.onGoBack, this.onGoBack2,});
@@ -21,28 +22,37 @@ class _SigninState extends State<Signin> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 24, 22, 18),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.black,
+      body: SingleChildScrollView(
         child: Column(
           children: [
+            const SizedBox(height: 90,),
             const Text(
-              "Sign in your account",
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
+              "Sign in to your account",
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(
-              height: 20,
+              height: 50,
             ),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Mail'),
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
+            Padding(
+              padding: const EdgeInsets.only(left: 40, right: 40),
+              child: TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Mail*'),
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
             const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.only(left: 40, right: 40),
+              child: TextField(
+                controller: passwordController,
+                decoration: const InputDecoration(labelText: 'Password*',),
+                obscureText: true,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 50),
             ElevatedButton(
               onPressed: () async {
                 // User? user = FirebaseAuth.instance.currentUser;
@@ -52,7 +62,6 @@ class _SigninState extends State<Signin> {
                   await FirebaseAuth.instance.signInWithEmailAndPassword(
                       email: emailController.text,
                       password: passwordController.text);
-
                   alert.showSnackBar(
                     const SnackBar(
                       content: Text('Signin Successfull!'),
@@ -69,16 +78,17 @@ class _SigninState extends State<Signin> {
                   );
                 }
               },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
               child: const Text('SIGN IN'),
             ),
             // GoogleAuthProvider(),
             const SizedBox(
-              height: 10,
+              height: 40,
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text("Don't have account?", style: TextStyle(color: Color.fromARGB(255, 202, 195, 195)),),
+                const Text("Don't have account?", style: TextStyle(color: Color.fromARGB(255, 202, 195, 195), fontWeight: FontWeight.bold),),
                 TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -88,10 +98,11 @@ class _SigninState extends State<Signin> {
                       ),
                     );
                   },
-                  child: const Text('Sign up'),
+                  child: const Text('Sign up', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),),
                 ),
               ],
             ),
+            const SizedBox(height: 20,),
             TextButton(
               onPressed: () {
                 var nav = Navigator.of(context);
@@ -106,15 +117,47 @@ class _SigninState extends State<Signin> {
                 style: TextStyle(color: Colors.red),
               ),
             ),
+            const SizedBox(height: 50,),
             Row(
               children: [
-                IconButton(onPressed: (){}, icon: const FaIcon(FontAwesomeIcons.facebook, size: 50,)),
-                IconButton(onPressed: (){}, icon: const Icon(Icons.email_outlined)),
+                const Spacer(),
+                Row(
+                  children: [
+                    IconButton(onPressed: () => _launchUrl('https://www.facebook.com/israffile'), icon: const FaIcon(FontAwesomeIcons.facebook, size: 40,), color: const Color.fromARGB(255, 11, 123, 215),),
+                    const SizedBox(width: 20,),
+                    IconButton(onPressed: () => sendEmail(), icon: const Icon(Icons.email, size: 40,), color: const Color.fromARGB(255, 183, 110, 2),),
+                    const SizedBox(width: 20,),
+                    IconButton(onPressed: () => _launchUrl("https://www.instagram.com/isr_afil"), icon: const FaIcon(FontAwesomeIcons.instagram, size: 40,), color: const Color.fromARGB(255, 226, 18, 4),),
+                  ],
+                ),
+                const Spacer(),
               ],
             ),
           ],
         ),
       ),
     );
+  }
+  void _launchUrl(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      throw "Could not launch $url";
+    }
+  }
+
+  final String email = 'kazimdisrafil7@gmail.com';
+  Future<void> sendEmail() async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: email,
+    );
+
+    if (await canLaunchUrl(emailUri)) {
+      await launchUrl(emailUri);
+    } else {
+      throw 'Could not launch $emailUri';
+    }
   }
 }

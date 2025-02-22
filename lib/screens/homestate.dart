@@ -29,20 +29,20 @@ class _HomeState extends State<Home> {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           return Scaffold(
-            backgroundColor:const Color.fromARGB(255, 24, 22, 18),
-            appBar: AppBar(
-              backgroundColor: const Color.fromARGB(255, 24, 22, 18),
-              elevation: 0,
-              title: Center(
-                child: Text(
-                  tittle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+            backgroundColor: const Color.fromARGB(255, 24, 22, 18),
+            // appBar: AppBar(
+            //   backgroundColor: const Color.fromARGB(255, 24, 22, 18),
+            //   elevation: 0,
+            //   title: Center(
+            //     child: Text(
+            //       tittle,
+            //       style: const TextStyle(
+            //         color: Colors.orangeAccent,
+            //         fontWeight: FontWeight.bold,
+            //       ),
+            //     ),
+            //   ),
+            // ),
             // body: _screens[_currentIndex],
             body: [
               const HomeScreen(),
@@ -55,38 +55,46 @@ class _HomeState extends State<Home> {
                       },
                     )
                   : Signin(
-                    onGoBack2: (){
-                      setState(() {
-                        _currentIndex = 0;
-                      });
-                    },
+                      onGoBack2: () {
+                        setState(() {
+                          _currentIndex = 0;
+                        });
+                      },
                       onGoBack: () {
                         setState(() {
                           _currentIndex = 0;
                         });
                       },
                     ),
-              const ProfileScreen(),
+              const Profile(),
             ][_currentIndex],
             bottomNavigationBar: BottomNavigationBar(
-              backgroundColor: const Color.fromARGB(255, 24, 22, 18),
-              onTap: (value) {
+              backgroundColor: Colors.black,
+              onTap: (index) {
                 setState(() {
-                  _currentIndex = value;
+                  _currentIndex = index;
                 });
               },
+              unselectedItemColor: Colors.grey,
               items: [
                 const BottomNavigationBarItem(
-                  icon: Icon(Icons.home, color: Colors.white,),
+                  icon: Icon(
+                    Icons.dashboard,
+                    color: Colors.grey,
+                  ),
                   label: '',
                 ),
                 const BottomNavigationBarItem(
-                  icon: Icon(Icons.add_circle_rounded, color: Colors.white),
+                  icon: Icon(
+                    Icons.add_circle_rounded,
+                  ),
                   label: '',
                 ),
                 if (snapshot.hasData)
                   const BottomNavigationBarItem(
-                    icon: Icon(Icons.person, color: Colors.white,),
+                    icon: Icon(
+                      Icons.person,
+                    ),
                     label: '',
                   )
               ],
